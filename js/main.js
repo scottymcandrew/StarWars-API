@@ -1,9 +1,7 @@
-const apiEndpoint = "https://swapi.co/api/";
-
-function getData(starWarsSubject, cb) {
+function getData(url, cb) {
     var xhr = new XMLHttpRequest();
 
-    xhr.open("GET", apiEndpoint + starWarsSubject + "/");
+    xhr.open("GET", url);
     xhr.send();
 
     xhr.onreadystatechange = function () {
@@ -24,11 +22,29 @@ function getTableHeaders(obj) {
     return `<tr>${tableHeaders}</tr>`;
 }
 
-function writeToDocument(starWarsSubject) {
+function generatePaginationButtons (next, prev) {
+    if (next && prev) {
+        return `<button onclick=writeToDocument('${prev}')>Previous</button>
+                <button onclick=writeToDocument('${next}')>Next</button`;
+    } else if (next && !prev) {
+        return `<button onclick=writeToDocument('${next}')>Next</button`;
+    } else if (!next && prev) {
+        return `<button onclick=writeToDocument('${prev}')>Previous</button>`;
+    }
+}
+
+function writeToDocument(url) {
     var el = document.getElementById("data");
+    var tableRows = [];
+    
     // Clear results each run so subsequent values are not written continuously to the page
     el.innerHTML = "";
-    getData(starWarsSubject, function (data) {
+    getData(url, function (data) {
+        var pagination;
+        if (data.next || data.previous) {
+            pagination = generatePaginationButtons(data.next, data.previous);
+        }
+
         // .results is what is returned from the API
         data = data.results;
         var tableHeaders = getTableHeaders(data[0]);
@@ -36,8 +52,17 @@ function writeToDocument(starWarsSubject) {
         data.forEach(function (item) {
             // .name is returned from the API - the key to the character name value
             //el.innerHTML += "<p>" + item.name + "</p>";
+            var dataRow = [];
+
+            Object.keys(item).forEach( function (key) {
+                var rowData = item[key].toString();
+                var truncatedData = rowData.substring(0, 15);
+
+                dataRow.push(`<td>${truncatedData}</td>`);
+            });
+            tableRows.push(`<tr>${dataRow}</tr>`);
         });
 
-        el.innerHTML = `<table>${tableHeaders}</table>`;
+        el.innerHTML = `<table>${tableHeaders}${tableRows}</table>${pagination}`;
     });
 }
